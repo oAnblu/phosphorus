@@ -2,6 +2,263 @@ opal_imports = {}
 def import(path) (
   switch path (
 
+case "./src/devtools/menus/storage.osl"
+  class __imports__968375a74382766e626cb371cd10b43a (
+    
+  )
+  return __imports__968375a74382766e626cb371cd10b43a
+case "./src/devtools/menus/network.osl"
+  class __imports__b4ec205ca81f7630cd7f76511fd744fb (
+    
+  )
+  return __imports__b4ec205ca81f7630cd7f76511fd744fb
+case "./src/devtools/menus/console.osl"
+  class __imports__ac7f1c744ff0d794c130cdf96196926d (
+    def getInst() (
+      return layouts.shared.state.currentDocument.rtrInst
+    )
+    
+    def topbar() (
+      local inst @= self.getInst()
+      
+      goto frame.left + 10 0
+      square 15 15 0 0 1
+      if inst != null (
+        if mouse_touching (
+          cursor "pointer"
+          if onclick (
+            inst.console @= []
+          )
+        )
+        c shared.theme.text
+      ) else (
+        if mouse_touching (
+          cursor "not-allowed"
+        )
+        c shared.theme.seco
+      )
+      icon "w 2.5 cutcircle 0 0 10 0 180 line -6 -6 6 6" .7
+    )
+    
+    def update() (
+      local inst @= self.getInst()
+      
+      local y = frame.top
+      local start = y
+      
+      for ii inst.console.len (
+        local item @= inst.console[ii]
+        local lines @= item[2].wrapText(frame.width - 10 / 10).split("\n")
+        local height = lines.len * 20
+        
+        local col = null
+        if item[1] == "err" (
+          col = #f00
+        )
+        
+        local ly = y
+        local sy = y
+        
+        y -= 5
+        y -= height
+        y -= 5
+        
+        if col != null (
+          frame frame.left y frame.right ly (
+            c col
+            pen "opacity" 20
+            pen "size" 10000
+            pen "down"
+            pen "up"
+          )
+        )
+        
+        for i lines.len (
+          ly -= 10
+          goto frame.left + 5 ly - 5
+          text lines[i] 10 : c#shared.theme.text
+          ly -= 10
+        )
+        
+        pen "size" 2 : c#shared.theme.prim
+        
+        goto 0 sy
+        line frame.left 0 frame.right 0
+        
+        goto 0 y
+        line frame.left 0 frame.right 0
+      )
+    )
+  )
+  return __imports__ac7f1c744ff0d794c130cdf96196926d
+case "./src/devtools/menus/elements.osl"
+  class __imports__7de0f89117b2e081473955ae82bcf430 (
+    number indent = 20
+    
+    number x = 0
+    number y = 0
+    
+    number maxX = 0
+    
+    def drawElements(array elements) (
+      for i elements.len (
+        if elements[i] != null (
+          drawElement(elements[i])
+        )
+        if i < elements.len (
+          text "," 10
+        )
+      )
+    )
+    
+    def drawElement(object element) (
+      if element.children != null or element.kind == "script" (
+        self.y -= 15
+        goto 0 self.y
+        
+        element.dvt_open ??= false
+        
+        goto self.x self.y
+        square 20 20 0 0 1 : c#fff
+        if mouse_touching (
+          cursor "pointer"
+          if onclick (
+            element.dvt_open = !element.dvt_open
+          )
+        )
+        icon element.dvt_open ? "down" "right" .5 : c#shared.theme.text
+        
+        text element.blockName ?? element.name 10 : chx#15
+        if mouse_touching (
+          cursor "pointer"
+          if onclick (
+            element.dvt_open = !element.dvt_open
+          )
+        )
+        
+        self.y -= 15
+        
+        if element.dvt_open (
+          text "{" 10 : chx#10
+          self.maxX = max(self.maxX, x_position)
+          self.x += self.indent
+          
+          if element.kind == "script" (
+            local content = element.body
+            local lines @= content.split("\n")
+            local line_height = 25
+            local height = lines.len - 1 * line_height + 5
+            
+            local cy = self.y - 2.5
+            self.y -= height
+            
+            for i lines.len (
+              cy -= line_height / 2
+              
+              goto self.x cy
+              
+              self.maxX = max(self.maxX, x_position + (lines[i].len * 10))
+              text lines[i].trimText(frame.right - x_position - 17.5 / 8) 10 : c#shared.theme.text
+              
+              cy -= line_height / 2
+            )
+          ) else (
+            drawElements(element.children)
+          )
+          
+          self.x -= self.indent
+          
+          self.y -= 15
+          goto self.x - 5 self.y
+          text "}" 10
+          self.y -= 15
+        ) else (
+          if element.kind == "script" (
+            text "{" 10 : chx#10
+            drawTooLong() : chx#10
+            text "}" 10 : chx#10
+          ) else (
+            text "{" 10 : chx#10
+            drawMiniChildren(element.children) : chx#10
+            text "}" 10 : chx#10
+          )
+          self.maxX = max(self.maxX, x_position)
+        )
+      ) else (
+        self.y -= 15
+        goto self.x self.y
+        drawValue(element.value)
+        self.y -= 15
+      )
+    )
+    
+    def drawValue(object value) (
+      switch value.type (
+        case "str"
+          text value.value.JsonStringify() 10
+          break
+        case "num"
+          text value.value 10
+          break
+      )
+    )
+    
+    def drawMiniChildren(array children) (
+      if children.len == 0 (
+        change_x -20
+        return
+      )
+      
+      change_x 5
+      for i children.len (
+        drawMiniChild(children[i])
+        if i < children.len (
+          text ", " 6
+        )
+      )
+      change_x 5
+      
+      change_x -20
+    )
+    
+    def drawMiniChild(object element) (
+      if element.children != null or element.kind == "script" (
+        text element.blockName ?? element.name 7
+        text "{" 7 : chx#10
+        drawTooLong()
+        text "}" 7 : chx#20
+      ) else (
+        text "Element" 7
+      )
+    )
+    
+    def drawTooLong() (
+      text "..." 8 : chx#5
+      change_x -15
+    )
+    
+    def update() (
+      local document @= layouts.shared.state.currentDocument
+      local elements @= document.rwlInst.elements
+      
+      local s = frame.scroll_h * -1
+      self.x = frame.left + s + 15
+      local startX = self.x - 20
+      self.y = frame.top + frame.scroll
+      local startY = self.y
+      
+      self.width = 0
+      self.maxX = 0
+      
+      if elements != null (
+        drawElements(elements)
+      )
+      
+      self.width = self.maxX - startX
+      self.height = startY - self.y + 5
+    )
+  )
+  return __imports__7de0f89117b2e081473955ae82bcf430
 case "./src/layouts/summit/topbar.osl"
   class __imports__6a477e7780a631dfc33d414269cd6008 (
     def update(array area) (
@@ -560,11 +817,77 @@ case "./src/devtools/topbar.osl"
   return __imports__3261b0e52c0051dec0dc6394c943d033
 case "./src/devtools/main.osl"
   class __imports__87f5572a1b07abb6f61e525f0557da7a (
-    anchor = "r"
-    width = 200
+    string anchor = "r"
+    number width = 350
+    number resizingEdge = 0
     
-    def update(array area) (
-      void shared.graphics.box(area, #0ff)
+    menu = "console"
+    
+    def update(array area, array rawArea) (
+      goto rwl.area.centerX(area) rwl.area.centerY(area)
+      square rwl.area.width(area) - 10 rwl.area.height(area) - 10 10 : c#shared.theme.back
+      
+      local h = 25
+      frame area[1] area[4] area[3] area[4] - h (
+        void devtools.topbar.update()
+      )
+      
+      if mouse_y > area[2] and mouse_y < area[4] (
+        if anchor == "r" and abs(mouse_x - area[1]) < 5 (
+          cursor "col-resize"
+          goto mouse_x mouse_y
+          square 100 100 0 0 1
+          if onclick (
+            self.resizingEdge = 1
+          )
+        )
+        if anchor == "l" and abs(mouse_x - area[3]) < 5 (
+          cursor "col-resize"
+          goto mouse_x mouse_y
+          square 100 100 0 0 1
+          if onclick (
+            self.resizingEdge = 3
+          )
+        )
+      )
+      
+      if !mouse_down (
+        self.resizingEdge = 0
+      )
+      
+      if self.resizingEdge != 0 (
+        self.width = abs(mouse_x - area[4 - self.resizingEdge])
+      )
+      self.width = min(self.width, rwl.area.width(rawArea) - 200)
+      self.width = max(self.width, 200)
+      
+      local menu @= devtools.menus[self.menu]
+      
+      c shared.theme.prim
+      local topbarH = 0
+      if menu.topbar != null (
+        topbarH = 25
+        frame area[1] area[4] - h area[3] area[4] - h - topbarH (
+          void menu.topbar()
+        )
+        local w = rwl.area.width(area)
+        goto rwl.area.centerX(area) area[4] - h - topbarH
+        pen "size" 2
+        line w / -2 -1 w / 2 -1 : c#shared.theme.prim
+        topbarH += 1
+      )
+      
+      c shared.theme.prim
+      frame area[1] area[4] - h - topbarH area[3] area[2] [menu.width,menu.height] "devtools_" ++ self.menu (
+        if menu != null (
+          if menu.update != null (
+            void menu.update()
+          )
+        ) else (
+          goto 0 0
+          centext "no open devtools menu" 9 : c#shared.theme.prim
+        )
+      )
     )
   )
   return __imports__87f5572a1b07abb6f61e525f0557da7a
@@ -3949,7 +4272,7 @@ case "./src/assets/empty.rwl"
   return "  root {\n    \"grahhh\"\n  }"
 
 case "./main.rwl"
-  return "  root [color=theme:prim] {\n    frame [Horizontal] {\n      section [size=100, rounding_tr=20, rounding_br=20] {\n        \"fr\" [color=theme:seco]\n      },\n      section {\n        frame [Vertical] {\n          section [size=50] {\n            \"maybe?\" [color=theme:text, anchor=\"l\", padding=10, size=15]\n          },\n          section [color=theme:back, rounding=20, margin_r=10, margin_b=10, padding=20] {\n            \"blehhh\" [color=theme:text],\n            \"fr\",\n            \":P\" [anchor=\"bl\",size=5]\n          }\n        }\n      }\n    },\n    script {\n      event(onload) {\n        log(\"blehh\");\n        \n        document.title = \"gay\";\n        document.icon = \"flag-progress\";\n      }\n    }\n  }"
+  return "  root [color=theme:prim] {\n    frame [Horizontal] {\n      section [size=100, rounding_tr=20, rounding_br=20] {\n        \"fr\" [color=theme:seco],\n        \"str\",\n        15\n      },\n      section {\n        frame [Vertical] {\n          section [size=50] {\n            \"maybe?\" [color=theme:text, anchor=\"l\", padding=10, size=15]\n          },\n          section [color=theme:back, rounding=20, margin_r=10, margin_b=10, padding=20] {\n            \"blehhh\" [color=theme:text],\n            \"fr\",\n            \":P\" [anchor=\"bl\",size=5]\n          }\n        }\n      }\n    },\n    script {\n      event(onload) {\n        for(i, range(1,10)) {\n          log(i);\n        }\n        \n        document.title = \"gay\";\n        document.icon = \"flag-progress\";\n      }\n    }\n  }"
 )
 )
 import as "glass" from "packages"
