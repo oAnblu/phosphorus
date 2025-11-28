@@ -141,6 +141,21 @@ class Parser (
     local start @= self.getPos()
     local tkn @= self.peek()
     
+    // void elements
+    if ["icon","image"].contains(tkn) (
+      void self.consume()
+      void self.consumeWhitespace()
+      local header @= self.header()
+      
+      return {
+        data: {
+          header
+        },
+        kind: tkn,
+        start, end: self.getPos()
+      }
+    )
+    
     // block
     if tkn.match("/^[a-zA-Z]+$/") != null (
       return self.blockStatement()

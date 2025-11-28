@@ -1,37 +1,8 @@
-root [color=theme:prim] {
+root {
   frame [Horizontal] {
-    section [size=100, rounding_tr=20, rounding_br=20] {
-      "fr" [color=theme:seco],
-      "str",
-      15
-    },
-    section {
-      frame [Vertical] {
-        section [size=50] {
-          "maybe?" [color=theme:text, anchor="l", padding=10, size=15]
-        },
-        section [color=theme:back, rounding=20, margin_r=10, margin_b=10, padding=20] {
-          "blehhh" [color=theme:text],
-          "fr",
-          button [id="hi",color=theme:prim, margin=30, padding=5, hover_color=theme:seco, margin_t=10, rounding=20] {
-            "boo" [color=theme:text]
-          },
-          ":P" [anchor="bl",size=5]
-        },
-        script {
-          event(#hi:click) {
-            log("fr");
-            document.redirect("local://~/projects/phosphorus/src/assets/empty.rwl");
-          }
-        }
-      }
-    }
-  },
-  script {
-    event(onload) {
-      log("bruh");
-      document.title = "gay";
-      document.icon = "flag-progress";
+    icon [src="flag-progress", size=50],
+    section [size=50%] {
+      "grah"
     }
   }
 }

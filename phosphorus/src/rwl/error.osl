@@ -55,6 +55,10 @@ object Errors = {
   ),
   InvalidScriptAttrType: def(data) -> (
     return "unknown script type attribute type" + data.type
+  ),
+  
+  NoIconSrc: def(data) -> (
+    return "icon has no src"
   )
 }
 

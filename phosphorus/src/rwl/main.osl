@@ -3,6 +3,10 @@ debug = false
 
 class RWLNode (
   // global attributes
+  def initGlobal() (
+    self.elemI = rwl.main.elemI
+    rwl.main.elemI ++
+  )
   def updateGlobal() (
     self.id = null
     
@@ -31,6 +35,10 @@ class RWLNode (
     
   )
   
+  def renderDevtools() (
+    
+  )
+  
   def expectOnHeader(string key, string type) (
     for attrI self.header.pairs.len (
       local attr @= self.header.pairs[attrI]
@@ -50,6 +58,50 @@ class RWLNode (
     )
     return null
   )
+  
+  def getAreaKeys(string name, pairs) (
+    local l = 0
+    local r = 0
+    local b = 0
+    local t = 0
+    
+    pairs ??= self.header.pairs
+    for pairI pairs.len (
+      local pair @= pairs[pairI]
+      local n = pair[1]
+      local value @= pair[2]
+      
+      if n == name (
+        l = value.value
+        r = value.value
+        b = value.value
+        t = value.value
+      ) else if n == name ++ "_x" (
+        l = value.value
+        r = value.value
+      ) else if n == name ++ "_y" (
+        b = value.value
+        t = value.value
+      ) else if n == name ++ "_l" (
+        l = value.value
+      ) else if n == name ++ "_r" (
+        r = value.value
+      ) else if n == name ++ "_b" (
+        b = value.value
+      ) else if n == name ++ "_t" (
+        t = value.value
+      )
+    )
+    
+    return [l, b, r, t]
+  )
+  
+  def getPadding(pairs) (
+    return self.getAreaKeys("padding", pairs)
+  )
+  def getMargin(pairs) (
+    return self.getAreaKeys("margin", pairs)
+  )
 )
 
 class RWLContainer extends RWLNode (
@@ -57,6 +109,7 @@ class RWLContainer extends RWLNode (
   def init(array children, object header) (
     self.children @= children
     self.header @= header
+    void self.initGlobal()
   )
   
   def update(array area, object context) (
@@ -64,51 +117,7 @@ class RWLContainer extends RWLNode (
     void self.updateBackground(area)
     void self.updateGlobal()
     
-    local childArea @= rwl.area.copy(area)
-    
-    local childPaddingL = 0
-    local childPaddingR = 0
-    local childPaddingB = 0
-    local childPaddingT = 0
-    
-    for i self.header.pairs.len (
-      local pair @= self.header.pairs[i]
-      local value @= pair[2]
-      
-      switch pair[1] (
-        case "padding"
-          childPaddingL = value.value
-          childPaddingR = value.value
-          childPaddingB = value.value
-          childPaddingT = value.value
-          break
-        case "padding_x"
-          childPaddingL = value.value
-          childPaddingR = value.value
-          break
-        case "padding_y"
-          childPaddingB = value.value
-          childPaddingT = value.value
-          break
-        case "padding_l"
-          childPaddingL = value.value
-          break
-        case "padding_r"
-          childPaddingR = value.value
-          break
-        case "padding_b"
-          childPaddingB = value.value
-          break
-        case "padding_t"
-          childPaddingT = value.value
-          break
-      )
-    )
-    
-    childArea[1] += childPaddingL
-    childArea[2] += childPaddingB
-    childArea[3] -= childPaddingR
-    childArea[4] -= childPaddingT
+    local childArea @= rwl.area.pad(area, self.getPadding())
     
     self.area @= area
     self.childArea @= childArea
@@ -169,6 +178,75 @@ class RWLContainer extends RWLNode (
       void rwl.debug.box(self.childArea, #0f0)
     )
     void rwl.main.RenderElements(self.children)
+    void self.renderDevtools()
+  )
+  
+  def renderDevtools() (
+    if self.elemI == devtools.main.hoveredElement (
+      self.childArea ??= self.area
+      
+      // left
+      void shared.graphics.filledTransparentArea([
+        self.area[1],
+        self.area[2],
+        self.childArea[1],
+        self.area[4]
+      ], #f0f, 20)
+      // right
+      void shared.graphics.filledTransparentArea([
+        self.childArea[3],
+        self.area[2],
+        self.area[3],
+        self.area[4]
+      ], #f0f, 20)
+      // top
+      void shared.graphics.filledTransparentArea([
+        self.childArea[1],
+        self.childArea[4],
+        self.childArea[3],
+        self.area[4]
+      ], #f0f, 20)
+      // bottom
+      void shared.graphics.filledTransparentArea([
+        self.childArea[1],
+        self.area[2],
+        self.childArea[3],
+        self.childArea[2]
+      ], #f0f, 20)
+      
+      if self.fullArea != null (
+        // left
+        void shared.graphics.filledTransparentArea([
+          self.fullArea[1],
+          self.fullArea[2],
+          self.area[1],
+          self.fullArea[4]
+        ], #0f0, 20)
+        // right
+        void shared.graphics.filledTransparentArea([
+          self.area[3],
+          self.fullArea[2],
+          self.fullArea[3],
+          self.fullArea[4]
+        ], #0f0, 20)
+        // top
+        void shared.graphics.filledTransparentArea([
+          self.area[1],
+          self.area[4],
+          self.area[3],
+          self.fullArea[4]
+        ], #0f0, 20)
+        // bottom
+        void shared.graphics.filledTransparentArea([
+          self.area[1],
+          self.fullArea[2],
+          self.area[3],
+          self.area[2]
+        ], #0f0, 20)
+      )
+      
+      void shared.graphics.filledTransparentArea(self.childArea, #0ff, 20)
+    )
   )
   
   def renderBackground() (
@@ -184,6 +262,7 @@ class RWLRoot extends RWLContainer (
   def init(array children, object header) (
     self.children @= children
     self.header @= header
+    void self.initGlobal()
   )
 )
 
@@ -193,6 +272,7 @@ class RWLFrame extends RWLContainer (
   def init(array children, object header) (
     self.children @= children
     self.header @= header
+    void self.initGlobal()
   )
   
   def update(array area, object context) (
@@ -229,95 +309,69 @@ class RWLFrame extends RWLContainer (
     
     for i self.children.len (
       local child @= self.children[i]
+      
+      // defaults to remaining
+      local size = total - amount
+      local pairs @= child.header.pairs
+      for pairI pairs.len (
+        local pair @= pairs[pairI]
+        local value @= pair[2]
+        if pair[1] == "size" or (pair[1] == "width" and dir == "x") or (pair[1] == "height" and dir == "y") (
+          switch value.type (
+            case "num"
+              size = value.value
+              break
+            case "percentage"
+              size = value.value / 100 * (total - amount)
+              break
+            default
+              return rwl.error.Error("ValueTypeMismatch", {
+                wanted: ["num", "percentage"],
+                got: value.type
+              })
+          )
+          break
+        )
+      )
+      
+      if dir == "x" (
+        local childArea @= [
+          flipped ? (area[3] - amount - size) (area[1] + amount),
+          area[2],
+          flipped ? (area[3] - amount) (area[1] + amount + size),
+          area[4]
+        ]
+      ) else if dir == "y" (
+        local childArea @= [
+          area[1],
+          flipped ? (area[2] + amount) (area[4] - amount - size),
+          area[3],
+          flipped ? (area[2] + amount + size) (area[4] - amount)
+        ]
+      )
+      
+      child.fullArea @= childArea
+      
+      childArea @= rwl.area.pad(childArea, self.getMargin(pairs))
+      
       if child.kind == "block" (
-        
-        local childMarginL = 0
-        local childMarginR = 0
-        local childMarginB = 0
-        local childMarginT = 0
-        
-        // defaults to remaining
-        local size = total - amount
-        local pairs @= child.header.pairs
-        for pairI pairs.len (
-          local pair @= pairs[pairI]
-          local value @= pair[2]
-          if pair[1] == "size" or (pair[1] == "width" and dir == "x") or (pair[1] == "height" and dir == "y") (
-            switch value.type (
-              case "num"
-                size = value.value
-                break
-              case "percentage"
-                size = value.value / 100 * (total - amount)
-                break
-              default
-                return rwl.error.Error("ValueTypeMismatch", {
-                  wanted: ["num", "percentage"],
-                  got: value.type
-                })
-            )
-            break
-          )
-          
-          switch pair[1] (
-            case "margin"
-              childMarginL = value.value
-              childMarginR = value.value
-              childMarginB = value.value
-              childMarginT = value.value
-              break
-            case "margin_x"
-              childMarginL = value.value
-              childMarginR = value.value
-              break
-            case "margin_y"
-              childMarginB = value.value
-              childMarginT = value.value
-              break
-            case "margin_l"
-              childMarginL = value.value
-              break
-            case "margin_r"
-              childMarginR = value.value
-              break
-            case "margin_b"
-              childMarginB = value.value
-              break
-            case "margin_t"
-              childMarginT = value.value
-              break
-          )
-        )
-        
-        if dir == "x" (
-          local childArea @= [
-            (flipped ? (area[3] - amount - size) (area[1] + amount)) + childMarginL,
-            area[2] + childMarginB,
-            (flipped ? (area[3] - amount) (area[1] + amount + size)) - childMarginR,
-            area[4] - childMarginT
-          ]
-        ) else if dir == "y" (
-          local childArea @= [
-            area[1] + childMarginL,
-            (flipped ? (area[2] + amount) (area[4] - amount - size)) + childMarginB,
-            area[3] - childMarginR,
-            (flipped ? (area[2] + amount + size) (area[4] - amount)) - childMarginT
-          ]
-        )
-        
         local out @= child.update(childArea, frameContext)
         if out.isError (
           return out
         )
-        
-        amount += size
+      ) else if ["icon"].contains(child.kind) (
+        void child.update(childArea, frameContext)
+      ) else (
+        return rwl.error.Error("ElemInFrame", {})
       )
+      amount += size
     )
   )
   
   def render() (
     void self.renderBackground()
     void rwl.main.RenderElements(self.children)
+    void self.renderDevtools()
   )
 )
 
@@ -327,6 +381,7 @@ class RWLSection extends RWLContainer (
   def init(array children, object header) (
     self.children @= children
     self.header @= header
+    void self.initGlobal()
   )
 )
 
@@ -336,63 +391,18 @@ class RWLPositionedContainer extends RWLContainer (
     
     local height = self.expectOnHeader("height", "num").value ?? 20
     
-    local marginL = 0
-    local marginR = 0
-    local marginB = 0
-    local marginT = 0
-    
-    local pairs @= self.header.pairs
-    for pairI pairs.len (
-      local pair @= pairs[pairI]
-      local value @= pair[2]
-      
-      switch pair[1] (
-        case "margin"
-          marginL = value.value
-          marginR = value.value
-          marginB = value.value
-          marginT = value.value
-          break
-        case "margin_x"
-          marginL = value.value
-          marginR = value.value
-          break
-        case "margin_y"
-          marginB = value.value
-          marginT = value.value
-          break
-        case "margin_l"
-          marginL = value.value
-          break
-        case "margin_r"
-          marginR = value.value
-          break
-        case "margin_b"
-          marginB = value.value
-          break
-        case "margin_t"
-          marginT = value.value
-          break
-      )
-    )
+    local margin @= self.getMargin()
     
     local area @= [
-      containerArea[1] + marginL,
-      context.y - height - marginT - marginB,
-      containerArea[3] - marginR,
-      context.y - marginT
+      containerArea[1] + margin[1],
+      context.y - height - margin[4] - margin[2],
+      containerArea[3] - margin[3],
+      context.y - margin[4]
     ]
     
     self.outArea @= area
     
-    local area @= [
-      containerArea[1] + marginL,
-      context.y - height - marginT - marginB,
-      containerArea[3] - marginR,
-      context.y - marginT
-    ]
-    
-    context.y -= height + marginT + marginB
+    context.y -= height + margin[4] + margin[2]
     
     local color @= self.expectOnHeader("color", "color")
     if color.isError (
@@ -412,52 +422,7 @@ class RWLPositionedContainer extends RWLContainer (
     
     void self.updateBackground(area)
     
-    local paddingL = 0
-    local paddingR = 0
-    local paddingB = 0
-    local paddingT = 0
-    
-    local pairs @= self.header.pairs
-    for pairI pairs.len (
-      local pair @= pairs[pairI]
-      local value @= pair[2]
-      
-      switch pair[1] (
-        case "padding"
-          paddingL = value.value
-          paddingR = value.value
-          paddingB = value.value
-          paddingT = value.value
-          break
-        case "padding_x"
-          paddingL = value.value
-          paddingR = value.value
-          break
-        case "padding_y"
-          paddingB = value.value
-          paddingT = value.value
-          break
-        case "padding_l"
-          paddingL = value.value
-          break
-        case "padding_r"
-          paddingR = value.value
-          break
-        case "padding_b"
-          paddingB = value.value
-          break
-        case "padding_t"
-          paddingT = value.value
-          break
-      )
-    )
-    
-    local childArea @= [
-      area[1] + paddingL,
-      area[2] + paddingB,
-      area[3] - paddingR,
-      area[4] - paddingT
-    ]
+    local childArea @= rwl.area.pad(area, self.getPadding())
     
     self.childArea @= childArea
     
@@ -477,6 +442,7 @@ class RWLPositionedContainer extends RWLContainer (
       void rwl.debug.box(self.outArea, #00f)
     )
     void rwl.main.RenderElements(self.children)
+    void self.renderDevtools()
   )
 )
 
@@ -486,7 +452,7 @@ class RWLButton extends RWLPositionedContainer (
   def init(array children, object header) (
     self.children @= children
     self.header @= header
-    self.elemI = rwl.main.elemI
+    void self.initGlobal()
   )
   
   def isHovered() (
@@ -752,6 +718,47 @@ class RWLElement extends RWLNode (
     )
     
     void rwl.debug.box(self.debugArea ?? [])
+    void self.renderDevtools()
+  )
+)
+
+class RWLIcon extends RWLNode (
+  kind = "icon"
+  
+  def update(array area, object context) (
+    local scale @= self.expectOnHeader("scale", "num")
+    if scale.isError (
+      return scale
+    )
+    self.scale = size.value ?? 1
+    
+    local src @= self.expectOnHeader("src", "str")
+    if src.isError (
+      return src
+    )
+    if src == null (
+      return rwl.error.Error("NoIconSrc", {})
+    )
+    self.src = src.value
+    
+    local color @= self.expectOnHeader("color", "color")
+    if color.isError (
+      return color
+    )
+    self.color = color.value
+    
+    // TODO: anchors?
+    self.x = rwl.area.centerX(area)
+    self.y = rwl.area.centerY(area)
+  )
+  
+  def render() (
+    void shared.graphics.picon(self.src, self.x, self.y, self.scale, self.color ?? "#fff")
+    void self.renderDevtools()
+  )
+  
+  def init(object header) (
+    self.header @= header
   )
 )
 
@@ -790,9 +797,9 @@ def AstToElement(ast, object inst) (
     )
     return { flags, pairs }
   )
-  self.elemI ++
   //log "a" ast
   local header @= AstToHeader(ast.data.header)
+  
   switch ast.kind (
     case "block"
       if ast.data.header.key != "script" (
@@ -825,8 +832,13 @@ def AstToElement(ast, object inst) (
           break
       )
       break
+    
     case "element"
       return rwl.main.RWLElement(rwl.value.AstToValue(ast.data.value), header)
+    
+    case "icon"
+      return rwl.main.RWLIcon(header)
+    
     default
       return rwl.error.Error("UnknownElementKind", {
         elementKind: ast.kind
@@ -871,6 +883,10 @@ class RWL (
   )
   
   def update(array area) (
+    if self.errored (
+      return
+    )
+    
     local out @= rwl.main.UpdateElements(self.elements, area, {
       inst: self,
       root: true
@@ -901,6 +917,10 @@ class RWL (
   )
   
   def interactUpdate(object context) (
+    if self.errored (
+      return
+    )
+  
     context.top = null
     context.topI = 0
     for i self.elements.len (

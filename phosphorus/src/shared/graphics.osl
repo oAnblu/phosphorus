@@ -83,10 +83,29 @@ def filledBox(array area, rounding, string color) (
   )
 )
 
+def filledTransparentArea(array area, string color, number opacity) (
+  frame area[1] area[4] area[3] area[2] (
+    c color
+    pen "opacity" opacity
+    pen "size" 9999
+    goto 0 0
+    pen "down"
+    pen "up"
+  )
+)
+
 def ctext(string text, number size, string color) (
   void ptext(text, self.cursor_x, self.cursor_y, size, color)
 )
 def ptext(string text, number x, number y, number size, string color) (
   goto x y
   text text size : c#color
+)
+
+def cicon(string src, number size, string color) (
+  void picon(text, self.cursor_x, self.cursor_y, size, color)
+)
+def picon(string src, number x, number y, number size, string color) (
+  goto x y
+  icon src size : c#color
 )

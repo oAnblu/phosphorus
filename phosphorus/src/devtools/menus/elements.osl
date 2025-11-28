@@ -37,10 +37,13 @@ def drawElement(object element) (
     text element.blockName ?? element.name 10 : chx#15
     if mouse_touching (
       cursor "pointer"
+      devtools.main.hoveredElement = element.elemI
       if onclick (
         element.dvt_open = !element.dvt_open
       )
     )
+    
+    drawHeader(element.header)
     
     self.y -= 15
     
@@ -90,12 +93,45 @@ def drawElement(object element) (
       )
       self.maxX = max(self.maxX, x_position)
     )
-  ) else (
+  ) else if element.kind == "element" (
     self.y -= 15
     goto self.x self.y
     drawValue(element.value)
+    drawHeader(element.header)
+    self.maxX = max(self.maxX, x_position)
+    self.y -= 15
+  ) else if element.kind == "icon" (
+    self.y -= 15
+    goto self.x self.y
+    text "Icon" 10
+    drawHeader(element.header)
+    self.maxX = max(self.maxX, x_position)
     self.y -= 15
   )
+)
+
+def drawHeader(object header) (
+  if header.flags.len == 0 and header.pairs.len == 0 (
+    return
+  )
+  
+  change_x 7.5
+  text "[" 10
+  for i header.flags.len (
+    local flag = header.flags[i]
+    text flag 8
+  )
+  
+  for i header.pairs.len (
+    local pair @= header.pairs[i]
+    text pair[1] 10
+    text "=" 8
+    drawValue(pair[2])
+    if i < header.pairs.len (
+      text ", " 8
+    )
+  )
+  text "]" 10
 )
 
 def drawValue(object value) (
@@ -103,8 +139,11 @@ def drawValue(object value) (
     case "str"
       text value.value.JsonStringify() 10
       break
-    case "num"
+    case "num"; case "color"
       text value.value 10
+      break
+    case "percentage"
+      text value.value.toStr() ++ "%" 10
       break
   )
 )
@@ -119,7 +158,7 @@ def drawMiniChildren(array children) (
   for i children.len (
     drawMiniChild(children[i])
     if i < children.len (
-      text ", " 6
+      text ", " 8
     )
   )
   change_x 5
@@ -146,6 +185,9 @@ def drawTooLong() (
 def update() (
   local document @= layouts.shared.state.currentDocument
   local elements @= document.rwlInst.elements
+  if typeof(elements) != "array" (
+    elements @= []
+  )
   
   local s = frame.scroll_h * -1
   self.x = frame.left + s + 15

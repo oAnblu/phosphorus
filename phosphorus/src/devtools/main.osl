@@ -6,9 +6,12 @@ boolean open = false
 number saveWidth = 350
 number resizingEdge = 0
 
+hoveredElement = 0
+
 menu = "console"
 
 def update(array area, array rawArea) (
+  self.hoveredElement = 0
   goto rwl.area.centerX(area) rwl.area.centerY(area)
   square rwl.area.width(area) - 10 rwl.area.height(area) - 10 10 : c#shared.theme.back
   

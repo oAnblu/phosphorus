@@ -18,3 +18,12 @@ def width(area) (
 def height(area) (
   return area[4] - area[2]
 )
+
+def pad(area, pad) (
+  return [
+    area[1] + pad[1],
+    area[2] + pad[2],
+    area[3] - pad[3],
+    area[4] - pad[4]
+  ]
+)
