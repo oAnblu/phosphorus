@@ -16,6 +16,7 @@ def onframe() (
     void self.document.rwlInst.interactUpdate({
       rtr: self.document.rtrInst
     })
+    void self.document.rtrUpdate()
     //void self.document.rwlInst.checkElemUpdate()
     local mods @= self.document.rtrInst.modules.getValues()
     for i mods.len (

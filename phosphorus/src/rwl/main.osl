@@ -26,8 +26,10 @@ class RWLNode (
   
   def checkUpdate() (
     if self.needsUpdate (
-      self.needsUpdate = false
-      void self.update(self.cu_area, self.cu_context)
+      if self.cu_area != null (
+        self.needsUpdate = false
+        void self.update(self.cu_area, self.cu_context)
+      )
     )
     
     // used when this was a branch like system
@@ -142,13 +144,11 @@ class RWLContainer extends RWLNode (
     self.childArea @= childArea
     
     return rwl.main.UpdateElements(self.children, childArea, {
-      x: rwl.area.centerX(childArea),
-      y: rwl.area.centerY(childArea),
       anchorX: "c",
       anchorY: "c",
       color: "#fff",
       inst: context.inst
-    })
+    }, self)
   )
   
   def interactUpdate(object context) (
@@ -188,6 +188,8 @@ class RWLContainer extends RWLNode (
       )
     )
     self.rounding @= rounding
+    
+    void self.updateBackgroundColor()
   )
   
   def render() (
@@ -423,7 +425,7 @@ class RWLFrame extends RWLContainer (
   
   def render() (
     if self.header.flags.contains("Hidden") (
-void self.renderFrameDevtools()
+      void self.renderFrameDevtools()
       return
     )
     
@@ -452,42 +454,82 @@ class RWLSection extends RWLContainer (
 
 class RWLPositionedContainer extends RWLContainer (
   def update(array containerArea, object context) (
-    void self.updateGlobal(area, context)
+    void self.updateGlobal(containerArea, context)
     
     local height = self.expectOnHeader("height", "num").value ?? 20
     
     local margin @= self.getMargin()
+    local padding @= self.getPadding()
+    
+    local anchor @= self.expectOnHeader("anchor", "str")
+    if anchor.isError (
+      return anchor
+    )
+    anchor = anchor["value"]
+    
+    if context.x == null or context.y == null (
+      anchor ??= "c"
+    )
+    
+    if anchor != null (
+      if ["tl","t","tr",
+          "l","c","r",
+          "bl","b","br",
+          "top left", "top", "top right",
+          "left", "center", "right",
+          "bottom left", "bottom", "bottom right"].contains(anchor).not() (
+        return rwl.error.Error("InvalidAnchorName", {
+          name: anchor
+        })
+      )
+      
+      local anchorX = rwl.area.centerX(containerArea)
+      local anchorY = rwl.area.centerY(containerArea) + (height / 2 + margin[4])
+      local anchorXType = "c"
+      local anchorYType = "c"
+      
+      if anchor.endsWith("l") or anchor.endsWith("left") (
+        anchorXType = "l"
+      )
+      if anchor.endsWith("r") or anchor.endsWith("right") (
+        anchorXType = "r"
+      )
+      
+      if anchor.startsWith("t") or anchor.endsWith("top") (
+        anchorY = containerArea[4] - (0) + (margin[2] * 0)
+        anchorYType = "t"
+      )
+      if anchor.startsWith("b") or anchor.endsWith("bottom") (
+        anchorY = containerArea[2] + (height) + (margin[2] * 2)
+        anchorYType = "b"
+      )
+      
+      context.x = anchorX
+      context.y = anchorY
+      context.anchorX = anchorXType
+      context.anchorY = anchorYType
+    )
+    
+    context.y -= height / 2 + margin[2]
     
     local area @= [
       containerArea[1] + margin[1],
-      context.y - height - margin[4] - margin[2],
+      context.y - (height / 2),
       containerArea[3] - margin[3],
-      context.y - margin[4]
+      context.y + (height / 2)
+    ]
+    self.fullArea @= [
+      containerArea[1],
+      context.y - (height / 2) - margin[2],
+      containerArea[3],
+      context.y + (height / 2) + margin[4]
     ]
     
-    self.outArea @= area
-    
-    context.y -= height + margin[4] + margin[2]
-    
-    local color @= self.expectOnHeader("color", "color")
-    if color.isError (
-      return color
-    )
-    if color != null (
-      self.color @= color.value
-    )
-    
-    local hover_color @= self.expectOnHeader("hover_color", "color")
-    if hover_color.isError (
-      return hover_color
-    )
-    if hover_color != null (
-      self.hover_color @= hover_color.value
-    )
+    context.y -= height / 2 + margin[4]
     
     void self.updateBackground(area)
     
-    local childArea @= rwl.area.pad(area, self.getPadding())
+    local childArea @= rwl.area.pad(area, padding)
     
     self.childArea @= childArea
     
@@ -496,7 +538,7 @@ class RWLPositionedContainer extends RWLContainer (
       anchorY: "c",
       color: "#fff",
       inst: context.inst
-    })
+    }, self)
   )
   
   def render() (
@@ -529,6 +571,24 @@ class RWLButton extends RWLPositionedContainer (
     return mouse_x > self.area[1] and mouse_y > self.area[2] and mouse_x < self.area[3] and mouse_y < self.area[4]
   )
   
+  def updateBackgroundColor() (
+    local color @= self.expectOnHeader("color", "color")
+    if color.isError (
+      return color
+    )
+    if color != null (
+      self.color @= color.value
+    )
+    
+    local hover_color @= self.expectOnHeader("hover_color", "color")
+    if hover_color.isError (
+      return hover_color
+    )
+    if hover_color != null (
+      self.hover_color @= hover_color.value
+    )
+  )
+  
   def renderBackground() (
     local hov = self.isHovered()
     
@@ -536,7 +596,6 @@ class RWLButton extends RWLPositionedContainer (
     if self.hover_color != null and hov (
       col = self.hover_color
     )
-    
     if col != null (
       void shared.graphics.filledBox(self.area, self.rounding, col)
     )
@@ -880,8 +939,9 @@ class RWLIcon extends RWLNode (
   )
 )
 
-def UpdateElements(array elements, array area, object context) (
+def UpdateElements(array elements, array area, object context, object parentElem) (
   for i elements.len (
+    elements[i].parent @= parentElem
     local out @= elements[i].update(area, context)
     if out.isError (
       return out
@@ -982,6 +1042,7 @@ class RWL (
     self.rtrInst @= rtrInst
     self.errored = false
     self.needsUpdate = true
+    self.hasUpdated = false
     
     self._lastW = 0
     self._lastH = 0
@@ -1001,6 +1062,7 @@ class RWL (
   )
   
   def update(array area) (
+    self.hasUpdated = true
     if self.errored (
       return
     )
@@ -1008,7 +1070,7 @@ class RWL (
     local out @= rwl.main.UpdateElements(self.elements, area, {
       inst: self,
       root: true
-    })
+    }, {})
     if out.isError (
       error out.stringify()
       self.errored = true

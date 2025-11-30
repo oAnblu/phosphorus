@@ -1,27 +1,25 @@
 root {
   frame [Horizontal, id="bleh"] {
-    icon [src="grid-apps-full", scale=2, size=50, color=theme:text],
-    section [Hidden, size=50%] {
-      "grah" [color=theme:text],
-      button [id="myButton", height=30, margin_t=10, color=theme:prim, hover_color=theme:seco, rounding=10] {
+    section [
+      id="goob",
+      size=150, color=theme:prim,
+      rounding_tr=17.5, rounding_br=17.5,
+      padding=10
+    ] {
+      button [
+        anchor="t", height=35, padding=10,
+        color=theme:seco, hover_color=theme:tert, rounding=10
+      ] {
         "hi" [color=theme:text]
       },
-      script {
-        event(#myButton:click) {
-          log("hi");
-          elem := document.getElement("txt");
-          elem.anchor = "tr";
-          elem := document.getElement("bleh");
-          elem.toggleFlag("Flipped");
-        }
-      },
-      "hi bleh\nbleh" [id="txt",anchor="l"]
     }
   },
   
   script {
     event(onload) {
-      
+      elem := document.createTextElement("hi");
+      document.getElement("goob").addChild(elem);
+      log(elem, document.root);
     }
   }
 }

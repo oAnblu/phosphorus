@@ -20,6 +20,15 @@ class RTRDocument extends rtr.value.RTRValue (
           return rtr.value.RTRNullValue()
         )
         return rtr.value.RTRStrValue(self.doc.icon)
+      case "root"
+        local elems @= self.doc.rwlInst.elements
+        for i elems.len (
+          local elem @= elems[i]
+          if elem.name == "RWLRoot" (
+            return rtr.rwl.RTRElement(elem)
+          )
+        )
+        return rtr.value.RTRNullValue()
       
       // methods
       case "redirect"
@@ -35,6 +44,11 @@ class RTRDocument extends rtr.value.RTRValue (
           )
           return rtr.rwl.RTRElement(elem)
         ), self)
+      case "createTextElement"
+        return rtr.value.RTROslFuncValue(def(args, _inst) -> (
+          return rtr.rwl.RTRElement(rwl.main.RWLElement(rtr.rwl.rtrValueToRwlValue(args[1]), { flags: [], pairs: [] }))
+        ))
+      
       default
         throw "unknown property" + key.stringify() + "on document"
     )
@@ -55,6 +69,8 @@ class RTRDocument extends rtr.value.RTRValue (
 )
 
 class RTRElement extends rtr.value.RTRValue (
+  isRwlElem = true
+  
   def init(object elem) (
     self.elem @= elem
   )
@@ -66,7 +82,7 @@ class RTRElement extends rtr.value.RTRValue (
   )
   
   def stringify() (
-    local txt = self.elem.kind.toStr()
+    local txt = (self.elem.blockName ?? self.elem.kind).toStr()
     if self.elem.id != null (
       txt ++= ":" ++ self.elem.id
     )
@@ -121,6 +137,20 @@ class RTRElement extends rtr.value.RTRValue (
           local name = args[1].stringify()
           
           return rtr.value.RTRBoolValue(flags.contains(name))
+        ), self)
+      
+      case "addChild"
+        return rtr.value.RTROslFuncValue(def(args, _inst, elem) -> (
+          if elem.elem.children == null (
+            throw elem.kind + "cannot contain children"
+          )
+          if !args[1].isRwlElem (
+            throw "argument is not rwl element"
+          )
+          void elem.elem.children.append(args[1].elem)
+          
+          elem.elem.needsUpdate = true
+          void elem.elem.checkUpdate()
         ), self)
     )
     

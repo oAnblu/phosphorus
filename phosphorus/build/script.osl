@@ -140,7 +140,6 @@ case "./src/devtools/menus/console.osl"
       if self.runPromise != null (
         local ret @= self.runPromise.worker.return
         if ret != null (
-          log ret
           void inst.console.append(["repl-ret", ret.stringify(true)])
           self.runPromise = null
         )
@@ -221,8 +220,9 @@ case "./src/devtools/menus/elements.osl"
               
               goto self.x cy
               
-              self.maxX = max(self.maxX, x_position + (lines[i].len * 10))
-              text lines[i].trimText(frame.right - x_position - 17.5 / 8) 10 : c#shared.theme.text
+              //self.maxX = max(self.maxX, x_position + (lines[i].len * 10))
+              //text lines[i].trimText(frame.right - x_position - 17.5 / 8) 10 : c#shared.theme.text
+              text lines[i] 10 : c#shared.theme.text
               
               cy -= line_height / 2
             )
@@ -253,6 +253,7 @@ case "./src/devtools/menus/elements.osl"
         goto self.x self.y
         drawValue(element.value)
         drawHeader(element.header)
+        local s = x_position
         self.maxX = max(self.maxX, x_position)
         local w = x_position - self.x
         goto x_position + self.x / 2 self.y
@@ -260,6 +261,7 @@ case "./src/devtools/menus/elements.osl"
         if mouse_touching (
           devtools.main.hoveredElement = element.elemI
         )
+        goto s self.y
         self.y -= 15
       ) else if element.kind == "icon" (
         self.y -= 15
@@ -354,8 +356,8 @@ case "./src/devtools/menus/elements.osl"
       )
       
       local s = frame.scroll_h * -1
-      self.x = frame.left + s + 15
-      local startX = self.x - 20
+      self.x = frame.left + s + 0
+      local startX = self.x
       self.y = frame.top + frame.scroll
       local startY = self.y
       
@@ -366,7 +368,9 @@ case "./src/devtools/menus/elements.osl"
         drawElements(elements)
       )
       
+      //self.width = self.maxX - startX
       self.width = self.maxX - startX
+      log self.width
       self.height = startY - self.y + 5
     )
   )
@@ -880,7 +884,6 @@ case "./src/layouts/shared/state.osl"
     
     def updateTab() (
       self.currentDocument @= self.tabs[self.currentTab].document
-      log self.currentDocument.url.text
       inputs[layouts.shared.urlbar.inputId] = self.currentDocument.url.text
       //self.currentDocument ??= shared.document.Document()
     )
@@ -1163,6 +1166,7 @@ case "./src/shared/tab_worker.osl"
         void self.document.rwlInst.interactUpdate({
           rtr: self.document.rtrInst
         })
+        void self.document.rtrUpdate()
         //void self.document.rwlInst.checkElemUpdate()
         local mods @= self.document.rtrInst.modules.getValues()
         for i mods.len (
@@ -1313,6 +1317,8 @@ case "./src/shared/document.osl"
       def init() (
         void self.createInsts()
         
+        self.started = false
+        
         void self.createWorker()
       )
       
@@ -1353,6 +1359,13 @@ case "./src/shared/document.osl"
       
       def update(array area) (
         void self.rwlInst.update(area)
+      )
+      
+      def rtrUpdate() (
+        if !self.started and self.rwlInst.hasUpdated (
+          void self.rtrInst.startModules()
+          self.started = true
+        )
       )
       
       def render(array area) (
@@ -1404,7 +1417,7 @@ case "./src/shared/document.osl"
         void self.createInsts()
         void self.rwlInst.loadFromAst(ast)
         void self.updateInsts()
-        void self.rtrInst.startModules()
+        self.started = false
       )
       
       def loadText(string text) (
@@ -1523,12 +1536,14 @@ case "./src/shared/graphics.osl"
       ) else if typeof(rounding) == "array" (
         // could rework this to have it be corner - rounding for pos
         // so it would have higher parity with canvas?
+        x = round(x)
+        y = round(y)
         goto x y
-        frame area[1] y x area[2] (
+        frame area[1] y + 1 x area[2] (
           local r = min(rounding[1] * 2, min(w, h) / 2)
           square w - r h - r r
         )
-        frame x y area[3] area[2] (
+        frame x y + 1 area[3] area[2] (
           local r = min(rounding[2] * 2, min(w, h) / 2)
           square w - r h - r r
         )
@@ -2476,7 +2491,7 @@ case "./src/rtr/ast.osl"
         local expr @= self.func()
         
         if self.peek() == "(" (
-          self.consume()
+          void self.consume()
           
           local args @= []
           local end = self.peek() == ")"
@@ -2592,6 +2607,33 @@ case "./src/rtr/ast.osl"
             obj: expr,
             key
           }
+          if self.peek() == "(" (
+            void self.consume()
+            
+            local args @= []
+            local end = self.peek() == ")"
+            while !end (
+              local out @= self.expression()
+              if out != null (
+                void args.append(out)
+              )
+              void self.consumeWhitespace()
+              if self.peek() == "," (
+                void self.consume()
+              )
+              void self.consumeWhitespace()
+              if self.peek() == ")" or self.atEnd() (
+                end = true
+              )
+            )
+            void self.expect(")")
+            
+            expr @= {
+              kind: "call",
+              args,
+              func: expr
+            }
+          )
           void self.consumeWhitespace()
         )
         
@@ -3989,8 +4031,10 @@ case "./src/rwl/main.osl"
       
       def checkUpdate() (
         if self.needsUpdate (
-          self.needsUpdate = false
-          void self.update(self.cu_area, self.cu_context)
+          if self.cu_area != null (
+            self.needsUpdate = false
+            void self.update(self.cu_area, self.cu_context)
+          )
         )
         
         // used when this was a branch like system
@@ -4105,13 +4149,11 @@ case "./src/rwl/main.osl"
         self.childArea @= childArea
         
         return rwl.main.UpdateElements(self.children, childArea, {
-          x: rwl.area.centerX(childArea),
-          y: rwl.area.centerY(childArea),
           anchorX: "c",
           anchorY: "c",
           color: "#fff",
           inst: context.inst
-        })
+        }, self)
       )
       
       def interactUpdate(object context) (
@@ -4151,6 +4193,8 @@ case "./src/rwl/main.osl"
           )
         )
         self.rounding @= rounding
+        
+        void self.updateBackgroundColor()
       )
       
       def render() (
@@ -4386,7 +4430,7 @@ case "./src/rwl/main.osl"
       
       def render() (
         if self.header.flags.contains("Hidden") (
-    void self.renderFrameDevtools()
+          void self.renderFrameDevtools()
           return
         )
         
@@ -4415,42 +4459,82 @@ case "./src/rwl/main.osl"
     
     class RWLPositionedContainer extends RWLContainer (
       def update(array containerArea, object context) (
-        void self.updateGlobal(area, context)
+        void self.updateGlobal(containerArea, context)
         
         local height = self.expectOnHeader("height", "num").value ?? 20
         
         local margin @= self.getMargin()
+        local padding @= self.getPadding()
+        
+        local anchor @= self.expectOnHeader("anchor", "str")
+        if anchor.isError (
+          return anchor
+        )
+        anchor = anchor["value"]
+        
+        if context.x == null or context.y == null (
+          anchor ??= "c"
+        )
+        
+        if anchor != null (
+          if ["tl","t","tr",
+              "l","c","r",
+              "bl","b","br",
+              "top left", "top", "top right",
+              "left", "center", "right",
+              "bottom left", "bottom", "bottom right"].contains(anchor).not() (
+            return rwl.error.Error("InvalidAnchorName", {
+              name: anchor
+            })
+          )
+          
+          local anchorX = rwl.area.centerX(containerArea)
+          local anchorY = rwl.area.centerY(containerArea) + (height / 2 + margin[4])
+          local anchorXType = "c"
+          local anchorYType = "c"
+          
+          if anchor.endsWith("l") or anchor.endsWith("left") (
+            anchorXType = "l"
+          )
+          if anchor.endsWith("r") or anchor.endsWith("right") (
+            anchorXType = "r"
+          )
+          
+          if anchor.startsWith("t") or anchor.endsWith("top") (
+            anchorY = containerArea[4] - (0) + (margin[2] * 0)
+            anchorYType = "t"
+          )
+          if anchor.startsWith("b") or anchor.endsWith("bottom") (
+            anchorY = containerArea[2] + (height) + (margin[2] * 2)
+            anchorYType = "b"
+          )
+          
+          context.x = anchorX
+          context.y = anchorY
+          context.anchorX = anchorXType
+          context.anchorY = anchorYType
+        )
+        
+        context.y -= height / 2 + margin[2]
         
         local area @= [
           containerArea[1] + margin[1],
-          context.y - height - margin[4] - margin[2],
+          context.y - (height / 2),
           containerArea[3] - margin[3],
-          context.y - margin[4]
+          context.y + (height / 2)
+        ]
+        self.fullArea @= [
+          containerArea[1],
+          context.y - (height / 2) - margin[2],
+          containerArea[3],
+          context.y + (height / 2) + margin[4]
         ]
         
-        self.outArea @= area
-        
-        context.y -= height + margin[4] + margin[2]
-        
-        local color @= self.expectOnHeader("color", "color")
-        if color.isError (
-          return color
-        )
-        if color != null (
-          self.color @= color.value
-        )
-        
-        local hover_color @= self.expectOnHeader("hover_color", "color")
-        if hover_color.isError (
-          return hover_color
-        )
-        if hover_color != null (
-          self.hover_color @= hover_color.value
-        )
+        context.y -= height / 2 + margin[4]
         
         void self.updateBackground(area)
         
-        local childArea @= rwl.area.pad(area, self.getPadding())
+        local childArea @= rwl.area.pad(area, padding)
         
         self.childArea @= childArea
         
@@ -4459,7 +4543,7 @@ case "./src/rwl/main.osl"
           anchorY: "c",
           color: "#fff",
           inst: context.inst
-        })
+        }, self)
       )
       
       def render() (
@@ -4492,6 +4576,24 @@ case "./src/rwl/main.osl"
         return mouse_x > self.area[1] and mouse_y > self.area[2] and mouse_x < self.area[3] and mouse_y < self.area[4]
       )
       
+      def updateBackgroundColor() (
+        local color @= self.expectOnHeader("color", "color")
+        if color.isError (
+          return color
+        )
+        if color != null (
+          self.color @= color.value
+        )
+        
+        local hover_color @= self.expectOnHeader("hover_color", "color")
+        if hover_color.isError (
+          return hover_color
+        )
+        if hover_color != null (
+          self.hover_color @= hover_color.value
+        )
+      )
+      
       def renderBackground() (
         local hov = self.isHovered()
         
@@ -4499,7 +4601,6 @@ case "./src/rwl/main.osl"
         if self.hover_color != null and hov (
           col = self.hover_color
         )
-        
         if col != null (
           void shared.graphics.filledBox(self.area, self.rounding, col)
         )
@@ -4843,8 +4944,9 @@ case "./src/rwl/main.osl"
       )
     )
     
-    def UpdateElements(array elements, array area, object context) (
+    def UpdateElements(array elements, array area, object context, object parentElem) (
       for i elements.len (
+        elements[i].parent @= parentElem
         local out @= elements[i].update(area, context)
         if out.isError (
           return out
@@ -4945,6 +5047,7 @@ case "./src/rwl/main.osl"
         self.rtrInst @= rtrInst
         self.errored = false
         self.needsUpdate = true
+        self.hasUpdated = false
         
         self._lastW = 0
         self._lastH = 0
@@ -4964,6 +5067,7 @@ case "./src/rwl/main.osl"
       )
       
       def update(array area) (
+        self.hasUpdated = true
         if self.errored (
           return
         )
@@ -4971,7 +5075,7 @@ case "./src/rwl/main.osl"
         local out @= rwl.main.UpdateElements(self.elements, area, {
           inst: self,
           root: true
-        })
+        }, {})
         if out.isError (
           error out.stringify()
           self.errored = true
@@ -5082,6 +5186,15 @@ case "./src/rtr/rwl.osl"
               return rtr.value.RTRNullValue()
             )
             return rtr.value.RTRStrValue(self.doc.icon)
+          case "root"
+            local elems @= self.doc.rwlInst.elements
+            for i elems.len (
+              local elem @= elems[i]
+              if elem.name == "RWLRoot" (
+                return rtr.rwl.RTRElement(elem)
+              )
+            )
+            return rtr.value.RTRNullValue()
           
           // methods
           case "redirect"
@@ -5097,6 +5210,11 @@ case "./src/rtr/rwl.osl"
               )
               return rtr.rwl.RTRElement(elem)
             ), self)
+          case "createTextElement"
+            return rtr.value.RTROslFuncValue(def(args, _inst) -> (
+              return rtr.rwl.RTRElement(rwl.main.RWLElement(rtr.rwl.rtrValueToRwlValue(args[1]), { flags: [], pairs: [] }))
+            ))
+          
           default
             throw "unknown property" + key.stringify() + "on document"
         )
@@ -5117,6 +5235,8 @@ case "./src/rtr/rwl.osl"
     )
     
     class RTRElement extends rtr.value.RTRValue (
+      isRwlElem = true
+      
       def init(object elem) (
         self.elem @= elem
       )
@@ -5128,7 +5248,7 @@ case "./src/rtr/rwl.osl"
       )
       
       def stringify() (
-        local txt = self.elem.kind.toStr()
+        local txt = (self.elem.blockName ?? self.elem.kind).toStr()
         if self.elem.id != null (
           txt ++= ":" ++ self.elem.id
         )
@@ -5183,6 +5303,20 @@ case "./src/rtr/rwl.osl"
               local name = args[1].stringify()
               
               return rtr.value.RTRBoolValue(flags.contains(name))
+            ), self)
+          
+          case "addChild"
+            return rtr.value.RTROslFuncValue(def(args, _inst, elem) -> (
+              if elem.elem.children == null (
+                throw elem.kind + "cannot contain children"
+              )
+              if !args[1].isRwlElem (
+                throw "argument is not rwl element"
+              )
+              void elem.elem.children.append(args[1].elem)
+              
+              elem.elem.needsUpdate = true
+              void elem.elem.checkUpdate()
             ), self)
         )
         
@@ -5260,7 +5394,7 @@ case "./src/assets/empty.rwl"
   return "  root {\n    \"grahhh\"\n  }"
 
 case "./main.rwl"
-  return "  root {\n    frame [Horizontal, id=\"bleh\"] {\n      icon [src=\"grid-apps-full\", scale=2, size=50, color=theme:text],\n      section [Hidden, size=50%] {\n        \"grah\" [color=theme:text],\n        button [id=\"myButton\", height=30, margin_t=10, color=theme:prim, hover_color=theme:seco, rounding=10] {\n          \"hi\" [color=theme:text]\n        },\n        script {\n          event(#myButton:click) {\n            log(\"hi\");\n            elem := document.getElement(\"txt\");\n            elem.anchor = \"tr\";\n            elem := document.getElement(\"bleh\");\n            elem.toggleFlag(\"Flipped\");\n          }\n        },\n        \"hi bleh\\nbleh\" [id=\"txt\",anchor=\"l\"]\n      }\n    },\n    \n    script {\n      event(onload) {\n        \n      }\n    }\n  }"
+  return "  root {\n    frame [Horizontal, id=\"bleh\"] {\n      section [\n        id=\"goob\",\n        size=150, color=theme:prim,\n        rounding_tr=17.5, rounding_br=17.5,\n        padding=10\n      ] {\n        button [\n          anchor=\"t\", height=35, padding=10,\n          color=theme:seco, hover_color=theme:tert, rounding=10\n        ] {\n          \"hi\" [color=theme:text]\n        },\n      }\n    },\n    \n    script {\n      event(onload) {\n        elem := document.createTextElement(\"hi\");\n        document.getElement(\"goob\").addChild(elem);\n        log(elem, document.root);\n      }\n    }\n  }"
 )
 )
 import as "glass" from "packages"

@@ -3,6 +3,8 @@ class Document (
   def init() (
     void self.createInsts()
     
+    self.started = false
+    
     void self.createWorker()
   )
   
@@ -43,6 +45,13 @@ class Document (
   
   def update(array area) (
     void self.rwlInst.update(area)
+  )
+  
+  def rtrUpdate() (
+    if !self.started and self.rwlInst.hasUpdated (
+      void self.rtrInst.startModules()
+      self.started = true
+    )
   )
   
   def render(array area) (
@@ -94,7 +103,7 @@ class Document (
     void self.createInsts()
     void self.rwlInst.loadFromAst(ast)
     void self.updateInsts()
-    void self.rtrInst.startModules()
+    self.started = false
   )
   
   def loadText(string text) (

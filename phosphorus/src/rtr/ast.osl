@@ -564,7 +564,7 @@ class Parser (
     local expr @= self.func()
     
     if self.peek() == "(" (
-      self.consume()
+      void self.consume()
       
       local args @= []
       local end = self.peek() == ")"
@@ -680,6 +680,33 @@ class Parser (
         obj: expr,
         key
       }
+      if self.peek() == "(" (
+        void self.consume()
+        
+        local args @= []
+        local end = self.peek() == ")"
+        while !end (
+          local out @= self.expression()
+          if out != null (
+            void args.append(out)
+          )
+          void self.consumeWhitespace()
+          if self.peek() == "," (
+            void self.consume()
+          )
+          void self.consumeWhitespace()
+          if self.peek() == ")" or self.atEnd() (
+            end = true
+          )
+        )
+        void self.expect(")")
+        
+        expr @= {
+          kind: "call",
+          args,
+          func: expr
+        }
+      )
       void self.consumeWhitespace()
     )
     

@@ -66,8 +66,9 @@ def drawElement(object element) (
           
           goto self.x cy
           
-          self.maxX = max(self.maxX, x_position + (lines[i].len * 10))
-          text lines[i].trimText(frame.right - x_position - 17.5 / 8) 10 : c#shared.theme.text
+          //self.maxX = max(self.maxX, x_position + (lines[i].len * 10))
+          //text lines[i].trimText(frame.right - x_position - 17.5 / 8) 10 : c#shared.theme.text
+          text lines[i] 10 : c#shared.theme.text
           
           cy -= line_height / 2
         )
@@ -98,6 +99,7 @@ def drawElement(object element) (
     goto self.x self.y
     drawValue(element.value)
     drawHeader(element.header)
+    local s = x_position
     self.maxX = max(self.maxX, x_position)
     local w = x_position - self.x
     goto x_position + self.x / 2 self.y
@@ -105,6 +107,7 @@ def drawElement(object element) (
     if mouse_touching (
       devtools.main.hoveredElement = element.elemI
     )
+    goto s self.y
     self.y -= 15
   ) else if element.kind == "icon" (
     self.y -= 15
@@ -199,8 +202,8 @@ def update() (
   )
   
   local s = frame.scroll_h * -1
-  self.x = frame.left + s + 15
-  local startX = self.x - 20
+  self.x = frame.left + s + 0
+  local startX = self.x
   self.y = frame.top + frame.scroll
   local startY = self.y
   
@@ -211,6 +214,8 @@ def update() (
     drawElements(elements)
   )
   
+  //self.width = self.maxX - startX
   self.width = self.maxX - startX
+  log self.width
   self.height = startY - self.y + 5
 )

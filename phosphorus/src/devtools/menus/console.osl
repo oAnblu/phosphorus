@@ -125,7 +125,6 @@ def update() (
   if self.runPromise != null (
     local ret @= self.runPromise.worker.return
     if ret != null (
-      log ret
       void inst.console.append(["repl-ret", ret.stringify(true)])
       self.runPromise = null
     )

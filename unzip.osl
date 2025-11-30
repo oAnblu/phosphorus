@@ -1,0 +1,20 @@
+// unzips phosphorus.json into a folder
+
+permission "request" "file admin"
+
+def unzipFile(array data, string path) (
+  if data[1] == ".folder" (
+    for i data[3].len (
+      unzipFile(data[3][i], path ++ "/" ++ data[2])
+    )
+  ) else (
+    file "goto_dir" path
+    if open(path ++ "/" ++ data[2] ++ data[1]) != data[3] (
+      file "set_file" data[2] ++ data[1] data[3]
+      log "wrote" path ++ "/" ++ data[2] ++ data[1]
+    )
+  )
+)
+
+local data @= open("./phosphorus.json").JsonParse()
+unzipFile(data, "./")

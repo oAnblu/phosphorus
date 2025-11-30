@@ -1,0 +1,16 @@
+// zips the phosphorus folder into phosphorus.json
+
+permission "request" "file admin"
+
+def zipFile(string path) (
+  local f @= open(path,[1,2,4])
+  if f[1] == ".folder" (
+    return [".folder", f[2], f[3].JsonParse().map(zipFile)]
+  ) else (
+    return f
+  )
+)
+
+file "goto_dir" "./"
+
+file "set_file" "phosphorus.json" zipFile("./phosphorus").JsonStringify()
