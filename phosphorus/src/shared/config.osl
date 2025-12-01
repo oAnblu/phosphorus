@@ -23,8 +23,23 @@ net.refresh()
 
 class url (
   class defaults (
-    scheme = "rtr"
-    name = "unknown"
-    top = "web"
+    string scheme = "rtr"
+    string name = "unknown"
+    string top = "web"
+  )
+)
+
+class browser (
+  string name = "phosphorus"
+  array developers = ["flufi"]
+  string version = "1.0.0a"
+  
+  // browserName@developer
+  string save_developer = "rotur"
+  
+  class phosphorus (
+    string version = "1.0.0a"
+    
+    boolean usesCanvas = false
   )
 )

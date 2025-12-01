@@ -57,7 +57,7 @@ class Parser (
   )
   def expectText() (
     local tkn @= self.consume()
-    if !tkn.match("/^[a-zA-Z_]+$/") (
+    if !tkn.match("/^[a-zA-Z_0-9]+$/") (
       throw "identifier must consist of letters or _"
     )
     return tkn

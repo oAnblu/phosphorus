@@ -1,0 +1,11 @@
+
+array topbar_more = [
+  ["Dock",
+    {"left": def() -> (
+      void shared.settings.set("devtools", "dockside", "l")
+    )},
+    {"right": def() -> (
+      void shared.settings.set("devtools", "dockside", "r")
+    )}
+  ]
+]

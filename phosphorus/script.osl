@@ -31,7 +31,9 @@ object shared @= {
   theme: import("./src/shared/theme.osl"),
   config: import("./src/shared/config.osl"),
   tab_worker: import("./src/shared/tab_worker.osl"),
-  input: import("./src/shared/input.osl")
+  input: import("./src/shared/input.osl"),
+  settings: import("./src/shared/settings.osl"),
+  save: import("./src/shared/save.osl")
 }
 
 object layouts @= {
@@ -61,6 +63,7 @@ object net @= {
 object devtools @= {
   main: import("./src/devtools/main.osl"),
   topbar: import("./src/devtools/topbar.osl"),
+  rightclick: import("./src/devtools/rightclick.osl"),
   
   menus: {
     elements: import("./src/devtools/menus/elements.osl"),
@@ -69,6 +72,8 @@ object devtools @= {
     storage: import("./src/devtools/menus/storage.osl")
   }
 }
+
+void shared.settings.load()
 
 void layouts.chromeLike.main.init()
 

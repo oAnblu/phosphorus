@@ -24,12 +24,24 @@ class RWLNode (
     void self.checkUpdate()
   )
   
+  def updateFromCache() (
+    if self.cu_area != null (
+      void self.update(self.cu_area, self.cu_context)
+    )
+  )
+  
+  def updateParentFromCache() (
+    if self.parent != null and self.parent.name != null (
+      void self.parent.updateFromCache()
+    ) else (
+      void self.updateFromCache()
+    )
+  )
+  
   def checkUpdate() (
     if self.needsUpdate (
-      if self.cu_area != null (
-        self.needsUpdate = false
-        void self.update(self.cu_area, self.cu_context)
-      )
+      self.needsUpdate = false
+      void self.updateFromCache()
     )
     
     // used when this was a branch like system
@@ -496,11 +508,11 @@ class RWLPositionedContainer extends RWLContainer (
       )
       
       if anchor.startsWith("t") or anchor.endsWith("top") (
-        anchorY = containerArea[4] - (0) + (margin[2] * 0)
+        anchorY = containerArea[4]
         anchorYType = "t"
       )
       if anchor.startsWith("b") or anchor.endsWith("bottom") (
-        anchorY = containerArea[2] + (height) + (margin[2] * 2)
+        anchorY = containerArea[2] + height + margin[2] + margin[4]
         anchorYType = "b"
       )
       
@@ -510,7 +522,7 @@ class RWLPositionedContainer extends RWLContainer (
       context.anchorY = anchorYType
     )
     
-    context.y -= height / 2 + margin[2]
+    context.y -= height / 2 + margin[4]
     
     local area @= [
       containerArea[1] + margin[1],
@@ -525,7 +537,7 @@ class RWLPositionedContainer extends RWLContainer (
       context.y + (height / 2) + margin[4]
     ]
     
-    context.y -= height / 2 + margin[4]
+    context.y -= height / 2 + margin[2]
     
     void self.updateBackground(area)
     
@@ -653,6 +665,12 @@ class RWLScript extends RWLNode (
         name: "onupdate"
       }, {})
     )
+  )
+  
+  def start() (
+    void self.mod.runEvent({
+      name: "onload",
+    }, {})
   )
 )
 
@@ -1046,6 +1064,8 @@ class RWL (
     
     self._lastW = 0
     self._lastH = 0
+    self._lastX = 0
+    self._lastY = 0
     
     void self.loadFromAst(ast)
   )
@@ -1081,13 +1101,17 @@ class RWL (
   def checkUpdate(array area) (
     local w = rwl.area.width(area)
     local h = rwl.area.height(area)
+    local x = rwl.area.centerX(area)
+    local y = rwl.area.centerY(area)
     
-    // if the width or height has changed, update
-    if w != self._lastW or h != self._lastH (
+    // if the width or height or x or y has changed, update
+    if w != self._lastW or h != self._lastH or x != self._lastX or y != self._lastY (
       self.needsUpdate = true
       
       self._lastW = w
       self._lastH = h
+      self._lastX = x
+      self._lastY = y
     )
     
     if self.needsUpdate (

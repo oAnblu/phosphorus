@@ -1,11 +1,9 @@
 
-usesCanvas = false
-
 _canvasID = null
 _canvas = null
 
 def init() (
-  if self.usesCanvas (
+  if shared.config.browser.phosphorus.usesCanvas (
     self._canvasID = OuidNew()
     self._canvas @= shared.canvas.createCanvas(self._canvasID, window.width, window.height)
     log self

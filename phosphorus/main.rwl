@@ -1,25 +1,51 @@
 root {
   frame [Horizontal, id="bleh"] {
     section [
-      id="goob",
+      id="sidebar",
       size=150, color=theme:prim,
       rounding_tr=17.5, rounding_br=17.5,
       padding=10
-    ] {
-      button [
-        anchor="t", height=35, padding=10,
-        color=theme:seco, hover_color=theme:tert, rounding=10
-      ] {
-        "hi" [color=theme:text]
-      },
+    ] {},
+    section {
     }
   },
   
   script {
     event(onload) {
-      elem := document.createTextElement("hi");
-      document.getElement("goob").addChild(elem);
-      log(elem, document.root);
+      i := 0;
+      createSidebarButton := (name) ~ {
+        i = i + 1;
+        elem := document.createContainer("button");
+        elem.height = 35;
+        elem.padding = 10;
+        elem.color = theme.seco;
+        elem.hover_color = theme.tert;
+        elem.rounding = 10;
+        elem.id = "btn" + i;
+        if (i == 1) {
+          elem.anchor = "t";
+        }
+        elem.margin_b = 10;
+        document.getElement("sidebar").addChild(elem);
+        
+        script := document.createScript("event(#" + elem.id + ":click) {\n  log(\"" + name + " clicked!\");\n}\n");
+        document.root.addChild(script);
+        
+        text := document.createTextElement(name);
+        text.color = theme.text;
+        elem.addChild(text);
+      };
+      
+      btns := [
+        "hi",
+        "wow",
+        "blehh",
+        "fr"
+      ];
+      
+      for (btn, btns) {
+        createSidebarButton(btn);
+      }
     }
   }
 }

@@ -202,7 +202,7 @@ def update() (
   )
   
   local s = frame.scroll_h * -1
-  self.x = frame.left + s + 0
+  self.x = frame.left + s + 15
   local startX = self.x
   self.y = frame.top + frame.scroll
   local startY = self.y
@@ -216,6 +216,5 @@ def update() (
   
   //self.width = self.maxX - startX
   self.width = self.maxX - startX
-  log self.width
   self.height = startY - self.y + 5
 )

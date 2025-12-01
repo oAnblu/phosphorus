@@ -1,0 +1,20 @@
+
+def setName(string name) (
+  save name "set_directory"
+)
+
+def exists(string fileName) (
+  return fileName.saveExists()
+)
+
+def get(string fileName) (
+  if !self.exists(fileName) (
+    throw fileName ++ "does not exist"
+  )
+
+  return fileName.saveGet().toStr()
+)
+
+def set(string fileName, string data) (
+  save fileName "set" data
+)

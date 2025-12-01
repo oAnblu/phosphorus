@@ -48,6 +48,28 @@ class RTRDocument extends rtr.value.RTRValue (
         return rtr.value.RTROslFuncValue(def(args, _inst) -> (
           return rtr.rwl.RTRElement(rwl.main.RWLElement(rtr.rwl.rtrValueToRwlValue(args[1]), { flags: [], pairs: [] }))
         ))
+      case "createScript"
+        return rtr.value.RTROslFuncValue(def(args, _inst, doc) -> (
+          local elem @= rwl.main.RWLScript(args[1].stringify(), { flags: [], pairs: [] }, doc.doc.rwlInst)
+          void elem.start()
+          return rtr.rwl.RTRElement(elem)
+        ), self)
+      case "createContainer"
+        return rtr.value.RTROslFuncValue(def(args, _inst) -> (
+          local kind = args[1].stringify()
+          switch kind (
+            case "frame"
+              return rtr.rwl.RTRElement(rwl.main.RWLFrame([], { flags: [], pairs: [] }))
+            case "section"
+              return rtr.rwl.RTRElement(rwl.main.RWLSection([], { flags: [], pairs: [] }))
+            case "button"
+              return rtr.rwl.RTRElement(rwl.main.RWLButton([], { flags: [], pairs: [] }))
+            
+            default
+              throw "unknown container type" + kind
+          )
+          return rtr.rwl.RTRElement(rwl.main.RWLElement(rtr.rwl.rtrValueToRwlValue(args[1]), { flags: [], pairs: [] }))
+        ))
       
       default
         throw "unknown property" + key.stringify() + "on document"
@@ -149,8 +171,24 @@ class RTRElement extends rtr.value.RTRValue (
           )
           void elem.elem.children.append(args[1].elem)
           
-          elem.elem.needsUpdate = true
-          void elem.elem.checkUpdate()
+          void elem.elem.updateParentFromCache()
+        ), self)
+      case "popChild"
+        return rtr.value.RTROslFuncValue(def(args, _inst, elem) -> (
+          if elem.elem.children == null (
+            throw elem.kind + "doesnt contain children"
+          )
+          local idx = args.len > 0 ? args[1].numbify() 1
+          local out @= elem.elem.children[idx]
+          if out != null (
+            out @= rtr.rwl.RTRElement(out)
+          ) else (
+            out @= rtr.value.RTRNullValue()
+          )
+          void elem.elem.children.delete(idx)
+          
+          void elem.elem.updateParentFromCache()
+          return out
         ), self)
     )
     
@@ -170,8 +208,7 @@ class RTRElement extends rtr.value.RTRValue (
       local pair @= self.elem.header.pairs[i]
       if pair[1] == k (
         pair[2] @= v
-        self.elem.needsUpdate = true
-        void self.elem.checkUpdate()
+        void self.elem.updateParentFromCache()
         return
       )
     )
@@ -180,8 +217,7 @@ class RTRElement extends rtr.value.RTRValue (
       k, v
     ])
     
-    self.elem.needsUpdate = true
-    void self.elem.checkUpdate()
+    void self.elem.updateParentFromCache()
   )
 )
 
@@ -206,6 +242,8 @@ def rtrValueToRwlValue(object val) (
       return rwl.value.RWLStrValue(val.value)
     case "num"
       return rwl.value.RWLNumValue(val.value)
+    case "color"
+      return rwl.value.RWLColorValue(val.value)
   )
   
   throw "cannot set" + type.stringify() + "as rwl property"
@@ -221,4 +259,12 @@ def addToInst(object doc, object rtrInst) (
 
 def addToMod(object doc, object mod) (
   void mod.declScopeVar("document", RTRDocument(doc))
+  void mod.declScopeVar("theme", rtr.value.RTRObjValue({
+    back: rtr.value.RTRColorValue(shared.theme.back),
+    prim: rtr.value.RTRColorValue(shared.theme.prim),
+    seco: rtr.value.RTRColorValue(shared.theme.seco),
+    tert: rtr.value.RTRColorValue(shared.theme.tert),
+    text: rtr.value.RTRColorValue(shared.theme.text),
+    accent: rtr.value.RTRColorValue(shared.theme.accent),
+  }))
 )

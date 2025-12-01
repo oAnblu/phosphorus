@@ -1,0 +1,94 @@
+
+object entries = {
+  devtools: {
+    dockside: {
+      type: "string",
+      desc: "what side devtools is anchored to",
+      default: "r",
+      applySetting: def(string value) -> (
+        devtools.main.anchor = value
+      )
+    }
+  }
+}
+
+object _data = {}
+
+def load() (
+  local br @= shared.config.browser
+  void shared.save.setName(br.name ++ "@" ++ br.save_developer)
+  if !shared.save.exists("settings.json") (
+    void self.write()
+  )
+  self._data @= self.deserialize(shared.save.get("settings.json"))
+  void self.applySettings()
+)
+
+def write() (
+  void shared.save.set("settings.json", self.serialize())
+)
+
+def get(string category, string entry) (
+  return self._data[category][entry]
+)
+def set(string category, string entry, value) (
+  local entryData @= self.entries[category][entry]
+  if entryData == null (
+    throw "setting" + category ++ "/" ++ entry + "doesnt exist"
+  )
+  
+  if entryData.type != typeof(value) (
+    throw "expected" + entry.type + "for" + category ++ "/" ++ entry + "but got" + typeof(value)
+  )
+  self._data[category][entry] @= value
+  void self.write()
+  void self.applySettings()
+)
+
+def applySettings() (
+  local categoryData @= self.entries.getEntries()
+  for categoryI categoryData.len (
+    local category @= categoryData[categoryI]
+    local entryData @= category[2].getEntries()
+    for entryI entryData.len (
+      local entry @= entryData[entryI]
+      local value = self._data[category[1]][entry[1]] ?? entry[2].default
+      if entry[2].applySetting != null (
+        void entry[2].applySetting(value)
+      )
+    )
+  )
+)
+
+def serialize() (
+  local out @= {}
+  local categoryData @= self.entries.getEntries()
+  for categoryI categoryData.len (
+    local category @= categoryData[categoryI]
+    out[category[1]] @= {}
+    local entryData @= category[2].getEntries()
+    for entryI entryData.len (
+      local entry @= entryData[entryI]
+      local value = self._data[category[1]][entry[1]] ?? entry[2].default
+      out[category[1]][entry[1]] @= value
+    )
+  )
+  return out.JsonStringify()
+)
+def deserialize(string data) (
+  local raw @= data.JsonParse()
+  
+  local out @= {}
+  local categoryData @= self.entries.getEntries()
+  for categoryI categoryData.len (
+    local category @= categoryData[categoryI]
+    out[category[1]] @= {}
+    local entryData @= category[2].getEntries()
+    for entryI entryData.len (
+      local entry @= entryData[entryI]
+      local value = raw[category[1]][entry[1]] ?? entry[2].default
+      out[category[1]][entry[1]] @= value
+    )
+  )
+  return out
+)

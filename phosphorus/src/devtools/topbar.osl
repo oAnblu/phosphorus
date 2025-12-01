@@ -3,9 +3,6 @@ tabs_scroll = 0
 tabs_width = 0
 
 def update() (
-  goto 0 -5
-  square frame.width - 10 frame.height 10 : c#shared.theme.prim
-  
   square frame.width frame.height 0 0 1
   if mouse_touching (
     self.tabs_scroll += scroll.x.velocity + scroll.y.velocity * scroll.multiplier * 1.5

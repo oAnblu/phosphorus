@@ -162,6 +162,28 @@ class RTRBoolValue extends RTRLiteralValue (
   )
 )
 
+class RTRColorValue extends RTRLiteralValue (
+  def init(string value) (
+    self.value @= value
+  )
+  
+  def getRtrType() (
+    return rtr.value.RTRTypeValue({
+      name: "color"
+    })
+  )
+  
+  def stringify() (
+    return self.value.toStr()
+  )
+  def boolify() (
+    return !!self.value
+  )
+  def isEqual(other) (
+    return self.getRtrType().isEqual(other.getRtrType()) and self.value === other.value
+  )
+)
+
 class RTRFuncValue extends RTRValue (
   def getRtrType() (
     return rtr.value.RTRTypeValue({
