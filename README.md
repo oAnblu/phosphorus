@@ -11,3 +11,6 @@ Phosphorus is the main rotur web engine (eventually) powering browsers like summ
   * Phosphorus also uses a compiler to convert [rtr](https://docs.rotur.dev/languages/rtr) to a flat instruction based language for speed
 
 idk what else to put here 😔
+
+> [!NOTE]
+> phosphorus **must** be built with [fpp](https://github.com/Flufi-Boi/fpp) as it relies on a few of it's features.
