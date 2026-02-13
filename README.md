@@ -1,25 +1,32 @@
-
 Phosphorus is the main rotur web engine (eventually) powering browsers like summit on [originOS](https://github.com/Mistium/Origin-OS) :3
 
 <img width="1252" height="710" alt="phosphorus" src="https://raw.githubusercontent.com/RoturTW/phosphorus/refs/heads/main/assets/phosphorus.png" />
 
 # How to clone locally (on [origin](https://origin.mistium.com))
-* download [phosphorus.json](https://github.com/RoturTW/phosphorus/blob/main/phosphorus.json) and [unzip.osl](https://github.com/RoturTW/phosphorus/blob/main/unzip.osl)
-* create a folder in originOS, e.g. a projects folder
-* copy both phosphorus.json and unzip.osl into there
-* run unzip.osl, either by double clicking it in files or running it through studio
+
+- download [phosphorus.json](https://github.com/RoturTW/phosphorus/blob/main/phosphorus.json) and [unzip.osl](https://github.com/RoturTW/phosphorus/blob/main/unzip.osl)
+- create a folder in originOS, e.g. a projects folder
+- copy both phosphorus.json and unzip.osl into there
+- run unzip.osl, either by double clicking it in files or running it through studio
 
 # How to build locally
-* make sure [fpp](https://github.com/Flufi-Boi/fpp) is installed (in ~/:path)
-* go into terminal and navigate to your cloned version of phosphorus, e.g. ~/projects/phosphorus
-* run the command `fpp run build` or if you want just 1 layout, `fpp run build-layoutName`
+
+- make sure [fpp](https://github.com/Flufi-Boi/fpp) is installed (in ~/:path)
+- go into terminal and navigate to your cloned version of phosphorus, e.g. ~/projects/phosphorus
+- run the command `fpp run build` or if you want just 1 layout, `fpp run build-layoutName`
+
+# How to build locally (with zig)
+
+- make sure [fpp](https://github.com/Flufi-Boi/fpp) is installed (in ~/:path)
+- go into terminal and navigate to your cloned version of phosphorus, e.g. ~/projects/phosphorus
+- run the command `zig build` or if you want just 1 layout, `zig build layoutName`
 
 # Features
 
-* Modular layout system
-  * makes creating new browsers a lot easier
-* Bytecode generator and interpreter
-  * Phosphorus uses a compiler to convert [rtr](https://docs.rotur.dev/languages/rtr) to a flat instruction based language for speed
+- Modular layout system
+    - makes creating new browsers a lot easier
+- Bytecode generator and interpreter
+    - Phosphorus uses a compiler to convert [rtr](https://docs.rotur.dev/languages/rtr) to a flat instruction based language for speed
 
 idk what else to put here 😔
 
